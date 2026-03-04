@@ -1,20 +1,15 @@
-/*
- * 中国联通积分签到脚本 (Quantumult X 专用)
- * 脚本说明：支持自动获取 Cookie 并执行每日签到
- * 仓库地址：https://github.com/wuya110/QuantumultX
- * 
- * [rewrite_local]
- * # 捕获 Cookie (打开联通APP，进入“积分商城”或“签到”页面即可)
- * ^https?:\/\/m\.client\.10010\.com\/mobileService\/clickCount\/recordClickCount\.htm url script-request-header china_unicom.js
- * 
- * [task_local]
- * # 每日 8:30 自动签到
- * 30 8 * * * china_unicom.js, tag=中国联通签到, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/10010.png, enabled=true
- * 
- * [mitm]
- * hostname = m.client.10010.com
- */
+# 中国联通 2026 签到 (QX 专用)
+# 仓库：https://github.com/wuya110/QuantumultX
+# [mitm]
+# hostname = m.client.10010.com
 
+[rewrite_local]
+^https?:\/\/m\.client\.10010\.com\/mobileService\/clickCount\/recordClickCount\.htm url script-request-header https://raw.githubusercontent.com/wuya110/QuantumultX/main/china_unicom.js
+
+[task_local]
+30 8 * * * https://raw.githubusercontent.com/wuya110/QuantumultX/main/china_unicom.js, tag=联通签到, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/10010.png, enabled=true
+
+// --- 以下为脚本内容 ---
 const $ = new Env("中国联通签到");
 const cookieKey = "wuya_10010_cookie";
 
