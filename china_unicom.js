@@ -4,7 +4,8 @@
 # hostname = m.client.10010.com
 
 [rewrite_local]
-^https?:\/\/m\.client\.10010\.com\/mobileService\/clickCount\/recordClickCount\.htm url script-request-header https://raw.githubusercontent.com/wuya110/QuantumultX/main/china_unicom.js
+# 扩大捕获范围，只要进入移动服务就尝试抓取
+^https?:\/\/m\.client\.10010\.com\/mobileService\/.* url script-request-header https://raw.githubusercontent.com/wuya110/QuantumultX/main/china_unicom.js
 
 [task_local]
 30 8 * * * https://raw.githubusercontent.com/wuya110/QuantumultX/main/china_unicom.js, tag=联通签到, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/10010.png, enabled=true
@@ -16,7 +17,8 @@ const cookieKey = "wuya_10010_cookie";
 if (typeof $request !== "undefined") {
     // 捕获 Cookie 逻辑
     const ck = $request.headers["Cookie"] || $request.headers["cookie"];
-    if (ck && $request.url.indexOf("recordClickCount.htm") > -1) {
+    // 只要包含联通核心标识就抓
+    if (ck && ck.indexOf("ECS_ID") > -1) {
         if ($.setdata(ck, cookieKey)) {
             $.msg($.name, "✅ 获取 Cookie 成功", "现在可以关闭重写并等待定时任务运行");
         }
