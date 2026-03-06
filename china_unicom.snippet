@@ -1,0 +1,76 @@
+# name: 中国联通自动签到 (一键合集版)
+# author: wuya110
+# desc: 自动抓取 Cookie + 每日 8:30 自动签到。请在“重写-引用”中添加。
+
+[rewrite_local]
+# 匹配联通接口抓取 Cookie
+^https:\/\/act\.10010\.com\/SigninApp\/signin\/querySignininfo url script-request-header https://raw.githubusercontent.com/wuya110/QuantumultX/refs/heads/main/china_unicom.snippet
+
+[task_local]
+# 定时签到
+30 8 * * * https://raw.githubusercontent.com/wuya110/QuantumultX/refs/heads/main/china_unicom.snippet, tag=联通自动签到, enabled=true
+
+[hostname]
+hostname = act.10010.com
+
+[script]
+/*
+以下是脚本正文
+*/
+const $ = new Env("中国联通签到");
+const ckKey = "unicom_ck_wuya";
+
+if (typeof $request !== "undefined") {
+  getCookie();
+} else {
+  checkin();
+}
+
+function getCookie() {
+  if ($request.headers && $request.headers["Cookie"]) {
+    const ck = $request.headers["Cookie"];
+    $.setdata(ck, ckKey);
+    $.msg($.name, "✅ 获取 Cookie 成功", "现在可以关闭抓包并等待自动签到");
+  }
+  $.done();
+}
+
+async function checkin() {
+  const ck = $.getdata(ckKey);
+  if (!ck) {
+    $.msg($.name, "❌ 签到失败", "请先手动进入联通App签到页触发抓包");
+    $.done();
+    return;
+  }
+  const options = {
+    url: "https://act.10010.com/SigninApp/signin/daySign",
+    headers: {
+      "Cookie": ck,
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": "ChinaUnicom4.x/12.9 (com.chinaunicom.mobilebusiness; build:40; iOS 26.3.0)"
+    },
+    body: "imei="
+  };
+  $.post(options, (err, resp, data) => {
+    try {
+      const res = JSON.parse(data);
+      if (res.code === "0000") {
+        $.msg($.name, "🎉 签到成功", `奖励: ${res.data.prizeName || "积分"}`);
+      } else {
+        $.msg($.name, "⚠️ 结果", res.msg || "接口异常");
+      }
+    } catch (e) {
+      $.msg($.name, "❌ 解析失败", "返回数据格式有误");
+    }
+    $.done();
+  });
+}
+
+function Env(n) {
+  this.name = n;
+  this.getdata = (k) => $prefs.valueForKey(k);
+  this.setdata = (v, k) => $prefs.setValueForKey(v, k);
+  this.msg = (t, s, b) => $notify(t, s, b);
+  this.post = (o, c) => $task.fetch(o).then(r => c(null, r, r.body), e => c(e, null, null));
+  this.done = (v) => $done(v);
+}
