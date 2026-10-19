@@ -8,10 +8,10 @@
 
 ====================================
 [rewrite_local]
-^https://activity\.10010\.com/sixPalaceGridTurntableLottery/signin/ url script-request-header https://qx.wuya.dpdns.org/unicom_signin.js
+^https://activity\.10010\.com/sixPalaceGridTurntableLottery/signin/ url script-request-header https://raw.githubusercontent.com/wuya110/QuantumultX/main/unicom_signin.js
 
 [task_local]
-0 8 * * * https://qx.wuya.dpdns.org/unicom_signin.js, tag=联通签到, enabled=true
+0 8 * * * https://raw.githubusercontent.com/wuya110/QuantumultX/main/unicom_signin.js, tag=联通签到, enabled=true
 
 [mitm]
 hostname = activity.10010.com
