@@ -1,0 +1,5 @@
+# 联通营业厅每日自动签到 (QX 一键订阅)
+# 用法: QX「重写」→「引用」→ 添加本文件 URL,重写规则 + MitM 主机名一次导入
+hostname = activity.10010.com
+
+^https://activity\.10010\.com/sixPalaceGridTurntableLottery/signin/ url script-request-header https://raw.githubusercontent.com/wuya110/QuantumultX/main/unicom_signin.js
