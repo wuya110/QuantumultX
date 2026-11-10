@@ -1,0 +1,15 @@
+#!name=多邻国 Duolingo Max 解锁 增强版
+#!desc=Max 会员 + 无限红心,经验加倍,限时挑战时长(解锁全部关卡、直接通关已关)。
+
+# 多邻国 Duolingo Max 解锁 增强版 (QX 一键订阅)
+# 来源: Loon 插件 TAKAGIVEGETA/MyScripts/lingoDuo「Duolingo Max 解锁 增强版」扒皮转 QX
+# 用法: QX「重写」→「引用」→ 添加本 URL,重写规则 + MitM 主机名一次导入
+# 脚本本体: https://raw.githubusercontent.com/wuya110/QuantumultX/main/duolingo_max.js
+# 目前开着: Max 解锁(会员标识 + 无限红心)、经验加倍、限时挑战时长;解锁全部关卡、直接通关已关,
+#   想关哪个,改脚本顶部 CONFIG 里对应的 true 为 false,改完保存即生效。
+# 装好后杀掉多邻国 App 重进验证,无效即说明 App 不走这条接口。
+hostname = *.duolingo.com, *.duolingo.cn
+
+^https?:\/\/(ios-api-[a-z0-9-]+|api\d+)\.duolingo\.c(n|om)\/2023-05-23\/(batch|users\/[^\/]+)(?:[?]|$) url script-response-body https://raw.githubusercontent.com/wuya110/QuantumultX/main/duolingo_max.js
+^https?:\/\/(?:ios-api-[a-z0-9-]+|api\d+)\.duolingo\.c(?:n|om)\/.*\/live-ops-challenges url script-response-body https://raw.githubusercontent.com/wuya110/QuantumultX/main/duolingo_max.js
+^https?:\/\/(?:ios-api-[a-z0-9-]+|api\d+|stories)\.duolingo\.c(?:n|om)\/(?:.*\/sessions|api2\/stories) url script-response-body https://raw.githubusercontent.com/wuya110/QuantumultX/main/duolingo_max.js
