@@ -7,3 +7,7 @@ https://raw.githubusercontent.com/wuya110/QuantumultX/main/unicom_signin.snippet
 网易云音乐 SVIP & 去广告（QX「重写」→「引用」添加）：
 
 https://raw.githubusercontent.com/wuya110/QuantumultX/main/wyy.js
+
+多邻国 Duolingo Max 解锁 增强版（QX「重写」→「引用」添加）：
+
+https://raw.githubusercontent.com/wuya110/QuantumultX/main/duolingo_max.snippet
