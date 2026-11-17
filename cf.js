@@ -1,6 +1,6 @@
 /*
 [rewrite_local]
-^https:\/\/api\.revenuecat\.com\/v1\/(subscribers\/[^\/]+$|receipts$) url script-response-body cf.js
+^https:\/\/api\.revenuecat\.com\/v1\/(subscribers\/[^\/]+$|receipts$) url script-response-body https://raw.githubusercontent.com/wuya110/QuantumultX/main/cf.js
 
 [mitm]
 hostname = api.revenuecat.com
