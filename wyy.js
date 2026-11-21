@@ -1,6 +1,6 @@
-#!name=网易云音乐SVIP&去广告(修复版)
-#!desc=已修复解析器报错问题，内置MITM Hostname。使用前请确保已安装并信任QX证书。
-#!author=暗夜 & 你的智能助手
+#!name=网易云音乐SVIP&去广告(自有版)
+#!desc=自有版：去广告 + 共享号 Cookie 注入，不再依赖第三方脚本。账号来源 fuzhang.net/vip
+#!author=你的智能助手 (去广告规则源自暗夜原版)
 
 # ========================================
 # 1. MITM Hostname (引用此资源会自动添加)
@@ -37,16 +37,20 @@ hostname = interface*.music.163.com, music.163.com, iad*.music.126.net, iad*.nos
 # ========================================
 # 3. SVIP 解锁脚本 (Script)
 # ========================================
+# 0. 共享号 Cookie 抓取 (在网易云 App 里登录共享号时自动抓,会员号才启用)
+^https?:\/\/music\.163\.com\/weapi\/user\/level url script-request-header https://raw.githubusercontent.com/wuya110/QuantumultX/main/wyy-s.js
+^https?:\/\/music\.163\.com\/weapi\/user\/level url script-response-body https://raw.githubusercontent.com/wuya110/QuantumultX/main/wyy-s.js
+
 # 皮肤解锁
-^https?:\/\/interface\d?\.music\.163\.com\/eapi\/playermode\/ url script-request-header https://he2o.vercel.app/Resource/-Rewrite/anyehttp/wyy-s.js
+^https?:\/\/interface\d?\.music\.163\.com\/eapi\/playermode\/ url script-request-header https://raw.githubusercontent.com/wuya110/QuantumultX/main/wyy-s.js
 
 # 歌曲/听书/详情/列表解锁
-^https?:\/\/interface\d?\.music\.163\.com\/eapi\/search\/(?:complex\/page|complex\/rec\/song\/get|song\/list\/page) url script-request-header https://he2o.vercel.app/Resource/-Rewrite/anyehttp/wyy-s.js
-^https?:\/\/interface\d?\.music\.163\.com\/eapi\/v3\/song\/detail url script-request-header https://he2o.vercel.app/Resource/-Rewrite/anyehttp/wyy-s.js
-^https?:\/\/interface\d?\.music\.163\.com\/eapi\/song\/(?:chorus|enhance\/|play\/|type\/detail\/get) url script-request-header https://he2o.vercel.app/Resource/-Rewrite/anyehttp/wyy-s.js
-^https?:\/\/interface\d?\.music\.163\.com\/eapi\/(?:v1\/artist\/top\/song|v3\/discovery\/recommend\/songs) url script-request-header https://he2o.vercel.app/Resource/-Rewrite/anyehttp/wyy-s.js
+^https?:\/\/interface\d?\.music\.163\.com\/eapi\/search\/(?:complex\/page|complex\/rec\/song\/get|song\/list\/page) url script-request-header https://raw.githubusercontent.com/wuya110/QuantumultX/main/wyy-s.js
+^https?:\/\/interface\d?\.music\.163\.com\/eapi\/v3\/song\/detail url script-request-header https://raw.githubusercontent.com/wuya110/QuantumultX/main/wyy-s.js
+^https?:\/\/interface\d?\.music\.163\.com\/eapi\/song\/(?:chorus|enhance\/|play\/|type\/detail\/get) url script-request-header https://raw.githubusercontent.com/wuya110/QuantumultX/main/wyy-s.js
+^https?:\/\/interface\d?\.music\.163\.com\/eapi\/(?:v1\/artist\/top\/song|v3\/discovery\/recommend\/songs) url script-request-header https://raw.githubusercontent.com/wuya110/QuantumultX/main/wyy-s.js
 
 # 等级/首页/音质解锁
-^https?:\/\/interface\d?\.music\.163\.com\/eapi\/vipnewcenter\/app\/resource\/newaccountpage url script-request-header https://he2o.vercel.app/Resource/-Rewrite/anyehttp/wyy-s.js
-^https?:\/\/interface\d?\.music\.163\.com\/w?e?api\/(homepage\/|v6\/)?playlist\/(?!(?:delete|subscribe|unsubscribe)) url script-request-header https://he2o.vercel.app/Resource/-Rewrite/anyehttp/wyy-s.js
-^https?:\/\/interface\d?\.music\.163\.com\/eapi\/vipauth\/app\/auth\/(soundquality\/)?query url script-request-header https://he2o.vercel.app/Resource/-Rewrite/anyehttp/wyy-s.js
+^https?:\/\/interface\d?\.music\.163\.com\/eapi\/vipnewcenter\/app\/resource\/newaccountpage url script-request-header https://raw.githubusercontent.com/wuya110/QuantumultX/main/wyy-s.js
+^https?:\/\/interface\d?\.music\.163\.com\/w?e?api\/(homepage\/|v6\/)?playlist\/(?!(?:delete|subscribe|unsubscribe)) url script-request-header https://raw.githubusercontent.com/wuya110/QuantumultX/main/wyy-s.js
+^https?:\/\/interface\d?\.music\.163\.com\/eapi\/vipauth\/app\/auth\/(soundquality\/)?query url script-request-header https://raw.githubusercontent.com/wuya110/QuantumultX/main/wyy-s.js
