@@ -1,12 +1,12 @@
 #!name=网易云 SVIP 全自动版
-#!desc=定时拉取 fuzhang.net/vip 共享号自动登录 + 抓取 + 注入，不依赖任何第三方脚本
+#!desc=打开网易云自动登录 fuzhang 共享号，不用定时任务，不用手动登录
 /*
 网易云音乐 SVIP(全自动版) · Quantumult X
 原理:
-  定时任务每 3 小时拉一次 https://fuzhang.net/vip/ (网易云区每次 5 个共享号),
-  用 WEAPI 登录逐个尝试,登上的那个号的 MUSIC_U 存起来,
-  之后所有 eapi 解锁请求都换上这份 Cookie,SVIP 身份即生效。
-  号池换新一批才重试,同一批号不反复试;登不上就留着旧 Cookie,等下一批。
+  打开网易云时,本脚本自动检查已存的共享号 Cookie:
+  没过期就直接用;过期了就自己去 https://fuzhang.net/vip/ 拉最新一批共享号,
+  用 WEAPI 登录逐个尝试,登上的那个号的 MUSIC_U 存起来继续用。
+  不用加定时任务,不用手动登录。号池每 3 小时更新一批,新一批来了自动再试。
   抓取模式仍在:在 App 里手动登录共享号时,user/level 请求+响应双重确认后也会启用。
 账号来源: https://fuzhang.net/vip/ (每 3 小时更新)
 
@@ -16,9 +16,6 @@
 ^https?:\/\/music\.163\.com\/weapi\/user\/level url script-response-body https://raw.githubusercontent.com/wuya110/QuantumultX/main/wyy-s.js
 (其余 eapi 解锁规则见 wyy.js,均指向本文件)
 
-[task_local]
-0 *\/3 * * * https://raw.githubusercontent.com/wuya110/QuantumultX/main/wyy-s.js, tag=网易云自动登录, enabled=true
-
 [mitm]
 hostname = music.163.com
 ====================================
@@ -27,8 +24,9 @@ hostname = music.163.com
 const CONFIG = {
   sourceUrl: 'https://fuzhang.net/vip/',
   loginUrl: 'https://music.163.com/weapi/login/cellphone',
-  cookieMaxAgeMs: 6 * 3600 * 1000,   // Cookie 6 小时内算新鲜,跳过登录
-  taskWatchdogMs: 25000,             // 单次任务最多 25 秒
+  cookieMaxAgeMs: 3 * 3600 * 1000,   // Cookie 3 小时内算新鲜,直接注入
+  checkThrottleMs: 30 * 60 * 1000,   // 没新 Cookie 时,最多 30 分钟查一次号池
+  refreshBudgetMs: 15000,            // 单次刷新最多 15 秒(避免拖住听歌请求)
   reqTimeoutSec: 15                  // 单请求 15 秒超时
 };
 
@@ -39,6 +37,7 @@ const PEND_COOKIE_KEY = 'wyy_svip_pending_cookie';
 const PEND_U_KEY = 'wyy_svip_pending_u';
 const REJECTED_U_KEY = 'wyy_svip_rejected_u';
 const BATCH_KEY = 'wyy_svip_batch';
+const CHECK_AT_KEY = 'wyy_svip_check_at';
 const SOURCE_URL = 'https://fuzhang.net/vip/';
 
 const WEAPI_NONCE = '0CoJUm6Qyw8W8jud';
@@ -380,63 +379,61 @@ function onResponse() {
   $done({});
 }
 
+/* ---------- 刷新:拉号池,自动登录(只在 Cookie 过期且没刚查过时跑) ---------- */
+async function refreshCookie() {
+  const now = Date.now();
+  const lastCheck = parseInt($prefs.valueForKey(CHECK_AT_KEY) || '0', 10);
+  if (now - lastCheck < CONFIG.checkThrottleMs) return false;
+  $prefs.setValueForKey(String(now), CHECK_AT_KEY);
+  const startAt = now;
+  const page = await taskFetch({ url: CONFIG.sourceUrl, method: 'GET', headers: { 'User-Agent': LOGIN_UA }, timeout: CONFIG.reqTimeoutSec });
+  const accounts = parseAccounts(page.body || '');
+  if (!accounts.length) return false;
+  const batchHash = md5(accounts.map(function (a) { return a.join(':'); }).join('|'));
+  if (batchHash === $prefs.valueForKey(BATCH_KEY)) return false;
+  $prefs.setValueForKey(batchHash, BATCH_KEY);
+  const fails = [];
+  for (let i = 0; i < accounts.length; i++) {
+    if (Date.now() - startAt > CONFIG.refreshBudgetMs) break;
+    const phone = accounts[i][0], pwd = accounts[i][1];
+    try {
+      const r = await weapiLogin(phone, pwd);
+      if (r.ok) {
+        saveCookie(r.cookie, r.musicU);
+        notify('网易云 SVIP 已自动登录',
+          '账号尾号 ' + phone.slice(-4) + ' · ' + (r.profile.nickname || '未知'),
+          '会员: ' + vipText(r.profile.vipType) + '\nMUSIC_U: ' + shortU(r.musicU) + '\n时间: ' + nowStr());
+        return true;
+      }
+      fails.push(phone.slice(-4) + ': ' + r.err);
+    } catch (e) {
+      fails.push(phone.slice(-4) + ': ' + String((e && e.message) || e).slice(0, 40));
+    }
+  }
+  notify('网易云自动登录', '这批 ' + accounts.length + ' 个号都登不上', fails.join('\n') + '\n下一批号更新后再试');
+  return false;
+}
+
 /* ---------- 注入模式: eapi 解锁请求换上共享号 Cookie ---------- */
-function onInject() {
-  const cookie = $prefs.valueForKey(COOKIE_KEY);
+async function onInject() {
+  const headers = $request.headers || {};
+  let cookie = $prefs.valueForKey(COOKIE_KEY);
+  const storedAt = parseInt($prefs.valueForKey(COOKIE_AT_KEY) || '0', 10);
+  const fresh = cookie && storedAt && (Date.now() - storedAt < CONFIG.cookieMaxAgeMs);
+  if (!fresh) {
+    try { await refreshCookie(); } catch (e) { /* 刷新失败就用旧 Cookie */ }
+    cookie = $prefs.valueForKey(COOKIE_KEY);
+  }
   if (!cookie) {
     if ($prefs.valueForKey('wyy_svip_reminded') !== '1') {
       $prefs.setValueForKey('1', 'wyy_svip_reminded');
-      notify('网易云 SVIP 未生效', '还没抓到共享号 Cookie', '定时任务每 3 小时自动登录一次\n等下一批号,或去 ' + SOURCE_URL + ' 手动登录一次');
+      notify('网易云 SVIP 未生效', '还没登上共享号', '正在等 fuzhang 下一批号\n' + SOURCE_URL);
     }
     $done({});
     return;
   }
-  const headers = $request.headers || {};
   headers['Cookie'] = cookie;
   $done({ headers: headers });
-}
-
-/* ---------- 定时任务模式:拉号池,自动登录 ---------- */
-async function onTask() {
-  const startAt = Date.now();
-  try {
-    const storedAt = parseInt($prefs.valueForKey(COOKIE_AT_KEY) || '0', 10);
-    if (storedAt && Date.now() - storedAt < CONFIG.cookieMaxAgeMs) { $done(); return; }
-    const page = await taskFetch({ url: CONFIG.sourceUrl, method: 'GET', headers: { 'User-Agent': LOGIN_UA }, timeout: CONFIG.reqTimeoutSec });
-    const accounts = parseAccounts(page.body || '');
-    if (!accounts.length) {
-      notify('网易云自动登录', '没抓到账号', 'fuzhang 页面结构可能变了\n' + SOURCE_URL);
-      $done();
-      return;
-    }
-    const batchHash = md5(accounts.map(function (a) { return a.join(':'); }).join('|'));
-    if (batchHash === $prefs.valueForKey(BATCH_KEY)) { $done(); return; }
-    $prefs.setValueForKey(batchHash, BATCH_KEY);
-    const fails = [];
-    for (let i = 0; i < accounts.length; i++) {
-      if (Date.now() - startAt > CONFIG.taskWatchdogMs) { fails.push('超时未试完'); break; }
-      const phone = accounts[i][0], pwd = accounts[i][1];
-      try {
-        const r = await weapiLogin(phone, pwd);
-        if (r.ok) {
-          saveCookie(r.cookie, r.musicU);
-          notify('网易云 SVIP 已自动登录',
-            '账号尾号 ' + phone.slice(-4) + ' · ' + (r.profile.nickname || '未知'),
-            '会员: ' + vipText(r.profile.vipType) + '\nMUSIC_U: ' + shortU(r.musicU) + '\n时间: ' + nowStr());
-          $done();
-          return;
-        }
-        fails.push(phone.slice(-4) + ': ' + r.err);
-      } catch (e) {
-        fails.push(phone.slice(-4) + ': ' + String((e && e.message) || e).slice(0, 40));
-      }
-    }
-    notify('网易云自动登录', '这批 ' + accounts.length + ' 个号都登不上', fails.join('\n') + '\n下一批号更新后再试');
-    $done();
-  } catch (e) {
-    notify('网易云自动登录出错', String((e && e.message) || e).slice(0, 100), '下一轮再试');
-    $done();
-  }
 }
 
 (function main() {
@@ -446,5 +443,5 @@ async function onTask() {
     onInject();
     return;
   }
-  onTask();
+  $done({});
 })();
