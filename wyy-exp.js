@@ -50,3 +50,14 @@ hostname = interface*.music.163.com, music.163.com, iad*.music.126.net, iad*.nos
 ^https?:\/\/interface\d?\.music\.163\.com\/eapi\/vipnewcenter\/app\/resource\/newaccountpage url script-request-header https://raw.githubusercontent.com/wuya110/QuantumultX/main/wyy-exp-s.js
 ^https?:\/\/interface\d?\.music\.163\.com\/w?e?api\/(homepage\/|v6\/)?playlist\/(?!(?:delete|subscribe|unsubscribe)) url script-request-header https://raw.githubusercontent.com/wuya110/QuantumultX/main/wyy-exp-s.js
 ^https?:\/\/interface\d?\.music\.163\.com\/eapi\/vipauth\/app\/auth\/(soundquality\/)?query url script-request-header https://raw.githubusercontent.com/wuya110/QuantumultX/main/wyy-exp-s.js
+
+# ========================================
+# 4. 直连网易云 (绕过 VPN 检测)
+# ========================================
+# 网易云看到流量从国外节点出来会弹 VPN 提示,直连后走真实 IP 就不弹了。
+# 直连不影响 MitM 解锁,脚本照样改 Cookie。
+[filter_local]
+host-suffix, 163.com, direct
+host-suffix, 126.net, direct
+host-suffix, netease.com, direct
+host-suffix, nosdn.127.net, direct
